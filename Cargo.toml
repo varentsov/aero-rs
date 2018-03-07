@@ -1,0 +1,6 @@
+[package]
+name = "aerospike"
+version = "0.1.0"
+authors = ["Neck Varentsov <neck.varentsov@gmail.com>"]
+
+[dependencies]
