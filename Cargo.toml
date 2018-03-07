@@ -1,5 +1,5 @@
 [package]
-name = "aerospike"
+name = "aero-rs"
 version = "0.1.0"
 authors = ["Neck Varentsov <neck.varentsov@gmail.com>"]
 
