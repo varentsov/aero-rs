@@ -12,7 +12,7 @@ fn connect_to_aerospike() {
     stream.set_read_timeout(Some(Duration::new(3, 0))).unwrap();
     stream.set_write_timeout(Some(Duration::new(3, 0))).unwrap();
 
-    let info_header = Header::new_blank(MessageType::Info);
+    let info_header = ProtocolHeader::new_blank(MessageType::Info);
     let bytes = info_header.serialize();
 
     let mut resp: [u8; 8] = [0; 8];
@@ -20,13 +20,13 @@ fn connect_to_aerospike() {
     stream.read_exact(&mut resp).unwrap();
     println!("response: {:?}", resp);
 
-    let recv_header = Header::deserialize(resp);
+    let recv_header = ProtocolHeader::deserialize(resp);
     println!("response header: {:?}", recv_header);
     println!("response datalen: {:?}", recv_header.datalen());
 
     let mut body: Vec<u8> = vec![0; recv_header.datalen() as usize];
     let readed = stream.read(&mut body).unwrap();
-    let stri = String::from_utf8_lossy(&body);
-    println!("body: {:?}", stri);
+    let info_response = InfoResponse::from_bytes(&body);
+    println!("body: {:?}", info_response);
 
 }

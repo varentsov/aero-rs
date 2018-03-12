@@ -2,45 +2,34 @@ extern crate byteorder;
 
 use self::byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 use std::io::{Write, Cursor};
+use std::collections::HashMap;
+use std::error::Error;
+use std::str;
 
 #[derive(Clone, Debug)]
-pub struct Header {
+pub struct ProtocolHeader {
     pub version: u8,
     pub message_type: MessageType,
     // size in network byte order
     pub size: [u8; 6],
 }
 
-#[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum MessageType {
     Info = 1,
     Message = 3,
 }
 
-#[derive(Clone, Debug)]
-pub struct InfoMessage {
-    build: String,
-    edition: String,
-    node: String,
-    replicas_read: String,
-    replicas_write: String,
-    service: String,
-    services: String,
-    statistics: String,
-    version: String,
-}
-
-impl Header {
-    pub fn new_blank(m_type: MessageType) -> Header {
-        Header{
+impl ProtocolHeader {
+    pub fn new_blank(m_type: MessageType) -> ProtocolHeader {
+        ProtocolHeader {
             version: 2,
             message_type: m_type,
             size: msg_len_to_bytes(0),
         }
     }
 
-    pub fn deserialize(buf: [u8; 8]) -> Header {
+    pub fn deserialize(buf: [u8; 8]) -> ProtocolHeader {
         let version = unsafe { *buf.get_unchecked(0) };
         let msg_type = unsafe { *buf.get_unchecked(1) };
         let message_type = match msg_type {
@@ -50,7 +39,7 @@ impl Header {
         };
         let mut size: [u8; 6] = [0; 6];
         size.copy_from_slice(&buf[2..]);
-        Header {
+        ProtocolHeader {
             version,
             message_type,
             size,
@@ -95,4 +84,28 @@ fn msg_len_from_bytes(src: &[u8; 6]) -> u64 {
     }
     let mut cursor = Cursor::new(&buf[..]);
     cursor.read_u64::<BigEndian>().unwrap()
+}
+
+#[derive(Clone, Debug)]
+pub struct InfoResponse {
+    pub data: HashMap<String, Vec<String>>
+}
+
+impl InfoResponse {
+    pub fn from_bytes(bytes: &[u8]) -> InfoResponse {
+        let initial_string = str::from_utf8(bytes).unwrap();
+        let initial_string = initial_string.trim();
+        let top_infos: Vec<&str> = initial_string.split("\n").collect();
+        let mut map = HashMap::new();
+        for line in top_infos {
+            let middle: Vec<&str> = line.split("\t").collect();
+            let key = middle[0].to_owned();
+            let values = middle[1].split(";").map(|x| x.to_owned()).collect();
+            map.insert(key, values);
+        }
+
+        InfoResponse {
+            data: map,
+        }
+    }
 }
